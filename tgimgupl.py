@@ -27,7 +27,7 @@ to redistribute it under certain conditions.
 
 headers = {
     'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:56.0) Gecko/20100101 Firefox/57.0',
-    'Referer': 'http://telegra.ph/',
+    'Referer': 'https://telegra.ph/',
     }
 
 uplurl = 'http://telegra.ph/upload'
