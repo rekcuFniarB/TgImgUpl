@@ -33,14 +33,14 @@ headers = {
 uplurl = 'http://telegra.ph/upload'
 
 types = {
-    'png': 'image/png',
-    'jpg': 'image/jpeg',
+    'png':  'image/png',
+    'jpg':  'image/jpeg',
     'jpeg': 'image/jpeg',
-    'gif': 'image/gif',
-    'svg': 'image/svg+xml',
-    #'ogg': 'application/ogg',
-    #'mp3': 'audio/mpeg',
-    #'txt': 'text/plain',
+    'gif':  'image/gif',
+    'svg':  'image/svg+xml',
+    #'ogg':  'application/ogg',
+    #'mp3':  'audio/mpeg',
+    #'txt':  'text/plain',
     #'html': 'text/html'
     }
 
@@ -77,8 +77,10 @@ if __name__ == '__main__':
         sys.exit(1)
 
     filename = os.path.basename(sys.argv[1])
+    ## replace non ascii chars with '?' otherwise upload fails
+    ascii_filename = filename.encode('ascii', 'replace').decode('utf-8')
     filetype = getType(filename)
-    fileToUpl = {'file': (filename, open(sys.argv[1], 'rb'), filetype)}
+    fileToUpl = {'file': (ascii_filename, open(sys.argv[1], 'rb'), filetype)}
     r = requests.post(uplurl, files=fileToUpl, headers=headers)
     if r.ok:
         result = r.json()
