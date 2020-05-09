@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.5
+#!/usr/bin/env python3
 
 ##  Tgimgupl: upload images to telegra.ph from command line.
 ##  Copyright (C) 2018  BrainFucker <retratserif@gmail.com>
@@ -25,24 +25,36 @@ This is free software, and you are welcome
 to redistribute it under certain conditions.
 '''
 
-headers = {
-    'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:56.0) Gecko/20100101 Firefox/57.0',
-    'Referer': 'https://telegra.ph/',
+class conf:
+    domain = 'https://telegra.ph'
+    headers = {
+        'User-Agent': '"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:75.0) Gecko/20100101 Firefox/75.0',
+        'Referer': os.path.join(domain, ''),
+        }
+    uplurl = os.path.join(domain, 'upload');
+
+    types = {
+        'png':  'image-/png',
+        'jpg':  'image/jpeg',
+        'jpeg': 'image/jpeg',
+        'gif':  'image/gif',
+        'svg':  'image/svg+xml',
+        #'ogg':  'application/ogg',
+        #'mp3':  'audio/mpeg',
+        #'txt':  'text/plain',
+        #'html': 'text/html'
     }
 
-uplurl = 'http://telegra.ph/upload'
+sys.path.insert(0, os.path.join(os.path.expanduser('~'), '.config', 'tgimgupl'))
 
-types = {
-    'png':  'image/png',
-    'jpg':  'image/jpeg',
-    'jpeg': 'image/jpeg',
-    'gif':  'image/gif',
-    'svg':  'image/svg+xml',
-    #'ogg':  'application/ogg',
-    #'mp3':  'audio/mpeg',
-    #'txt':  'text/plain',
-    #'html': 'text/html'
-    }
+try:
+    ## Override config with local version if exists
+    import localconf
+    for key in localconf.__dict__.keys():
+        if not '__' in key:
+            setattr(conf, key, localconf.__dict__[key])
+except ModuleNotFoundError:
+    pass
 
 def err(msg):
     sys.stderr.write('%s\n' % msg)
@@ -50,8 +62,8 @@ def err(msg):
 def getType(filename):
     _f = filename.split('.')
     ext = _f[len(_f) - 1].lower()
-    if ext in types:
-        return types[ext]
+    if ext in conf.types:
+        return conf.types[ext]
     else:
         err('Unsupported filetype %s.' % ext)
         sys.exit(1)
@@ -81,12 +93,12 @@ if __name__ == '__main__':
     ascii_filename = filename.encode('ascii', 'replace').decode('utf-8')
     filetype = getType(filename)
     fileToUpl = {'file': (ascii_filename, open(sys.argv[1], 'rb'), filetype)}
-    r = requests.post(uplurl, files=fileToUpl, headers=headers)
+    r = requests.post(conf.uplurl, files=fileToUpl, headers=conf.headers)
     if r.ok:
         result = r.json()
         if type(result) == list:
             ## print link to uploaded image to stdout
-            print('%s%s' % (os.path.dirname(headers['Referer']), result[0]['src']))
+            print('%s%s' % (os.path.dirname(conf.headers['Referer']), result[0]['src']))
         elif type(result) == dict:
             if 'error' in result:
                 err('Error: %s' % result['error'])
