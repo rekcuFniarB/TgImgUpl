@@ -13,6 +13,8 @@
 ##  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ##  GNU General Public License for more details.
 
+## This is the copy of this util: https://github.com/rekcuFniarB/TgImgUpl#readme
+
 import requests, sys, os
 
 info = '''
@@ -28,7 +30,7 @@ to redistribute it under certain conditions.
 class conf:
     domain = 'https://telegra.ph'
     headers = {
-        'User-Agent': '"Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:75.0) Gecko/20100101 Firefox/75.0',
+        'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:89.0) Gecko/20100101 Firefox/89.0',
         'Referer': os.path.join(domain, ''),
         }
     uplurl = os.path.join(domain, 'upload');
@@ -45,6 +47,9 @@ class conf:
         #'html': 'text/html'
     }
 
+class UploadError(BaseException):
+    pass
+
 sys.path.insert(0, os.path.join(os.path.expanduser('~'), '.config', 'tgimgupl'))
 
 try:
@@ -57,7 +62,7 @@ except ModuleNotFoundError:
     pass
 
 def err(msg):
-    sys.stderr.write('%s\n' % msg)
+    sys.stderr.write(f'{msg}\n')
 
 def getType(filename):
     _f = filename.split('.')
@@ -65,46 +70,54 @@ def getType(filename):
     if ext in conf.types:
         return conf.types[ext]
     else:
-        err('Unsupported filetype %s.' % ext)
-        sys.exit(1)
+        raise UploadError(f'Unsupported filetype {ext}')
+
+def upload(filePath):
+    '''Uploads file'''
+    if not os.path.exists(filePath):
+        raise UploadError(f'File "{filePath}" does not exist.')
+    
+    filename = os.path.basename(filePath)
+    ## replace non ascii chars with '?' otherwise upload fails
+    ascii_filename = filename.encode('ascii', 'replace').decode('utf-8')
+    filetype = getType(filename)
+    fileToUpl = {'file': (ascii_filename, open(filePath, 'rb'), filetype)}
+    r = requests.post(conf.uplurl, files=fileToUpl, headers=conf.headers)
+    if r.ok:
+        result = r.json()
+        if type(result) is list:
+            return {'base': conf.headers['Referer'], 'src': result[0]['src']}
+        elif type(result) is dict:
+            if 'error' in result:
+                err('Error: %s' % result['error'])
+                raise UploadError(result['error'])
+            else:
+                raise UploadError(result)
+        else:
+            raise UploadError(result)
+    else:
+        raise UploadError(r)
+
 
 if __name__ == '__main__':
     if len(sys.argv) < 2:
         err('Error: no file specified.')
         err(info)
         sys.exit(1)
-
+    
     if sys.argv[1] == '-h' or sys.argv[1] == '--help':
         ## show help
         err(info)
         sys.exit(0)
-
+    
     if len(sys.argv) > 2:
         err('Error: batch mode not supported.')
         err(info)
         sys.exit(1)
-
-    if not os.path.exists(sys.argv[1]):
-        err('File %s not found.' % sys.argv[1])
+    
+    try:
+        result = upload(sys.argv[1])
+        print(os.path.join(result["base"].strip('/'), result["src"].strip('/')))
+    except BaseException as e:
+        err(f'ERROR: {e}')
         sys.exit(1)
-
-    filename = os.path.basename(sys.argv[1])
-    ## replace non ascii chars with '?' otherwise upload fails
-    ascii_filename = filename.encode('ascii', 'replace').decode('utf-8')
-    filetype = getType(filename)
-    fileToUpl = {'file': (ascii_filename, open(sys.argv[1], 'rb'), filetype)}
-    r = requests.post(conf.uplurl, files=fileToUpl, headers=conf.headers)
-    if r.ok:
-        result = r.json()
-        if type(result) == list:
-            ## print link to uploaded image to stdout
-            print('%s%s' % (os.path.dirname(conf.headers['Referer']), result[0]['src']))
-        elif type(result) == dict:
-            if 'error' in result:
-                err('Error: %s' % result['error'])
-            else:
-                err(result)
-                sys.exit(1)
-        else:
-            err('Unknown error')
-            sys.exit(2)
