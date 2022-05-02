@@ -36,10 +36,7 @@ class conf:
     uplurl = os.path.join(domain, 'upload');
 
     types = {
-        'png':  'image-/png',
         'jpg':  'image/jpeg',
-        'jpeg': 'image/jpeg',
-        'gif':  'image/gif',
         'svg':  'image/svg+xml',
         #'ogg':  'application/ogg',
         #'mp3':  'audio/mpeg',
@@ -67,10 +64,10 @@ def err(msg):
 def getType(filename):
     _f = filename.split('.')
     ext = _f[len(_f) - 1].lower()
+    mime = f'image/{ext}'
     if ext in conf.types:
-        return conf.types[ext]
-    else:
-        raise UploadError(f'Unsupported filetype {ext}')
+        mime = conf.types[ext]
+    return mime
 
 def upload(filePath):
     '''Uploads file'''
@@ -89,7 +86,6 @@ def upload(filePath):
             return {'base': conf.headers['Referer'], 'src': result[0]['src']}
         elif type(result) is dict:
             if 'error' in result:
-                err('Error: %s' % result['error'])
                 raise UploadError(result['error'])
             else:
                 raise UploadError(result)
